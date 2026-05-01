@@ -2,4 +2,4 @@
 .idea
 
 ## Config file
-config.py
+research_agent/config.py
