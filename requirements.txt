@@ -1,5 +1,5 @@
-autogen-agentchat @ git+https://github.com/patrickstolc/autogen.git@0.2#egg=autogen-agentchat
-autogen==0.3.1
-mistralai==1.2.3
-ollama==0.3.3
-fix-busted-json==0.0.18
+autogen==0.12.2
+mistralai==2.4.4
+ollama==0.6.2
+fix-busted-json==0.0.19
+requests
