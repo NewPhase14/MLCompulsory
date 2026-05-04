@@ -1,4 +1,4 @@
-from autogen import ConversableAgent, UserProxyAgent
+from autogen import UserProxyAgent, ConversableAgent
 from research_agent.config import LLM_CONFIG
 from research_agent.tools.find_paper_tool import find_paper_tool
 
@@ -6,25 +6,43 @@ from research_agent.tools.find_paper_tool import find_paper_tool
 def create_research_agent() -> ConversableAgent:
     agent = ConversableAgent(
         name="Research Agent",
-        system_message="You are a helpful AI assistant specialized in finding academic papers. "
-                       "Your task is to search for relevant academic papers based on user queries. "
-                       "Use the paper_search tool to find papers. "
-                       "Analyze the results and identify the BEST paper candidate based on relevance, citation count, and recency. "
-                       "Return the best paper with its title, authors, year, citation count, and a brief summary. "
-                       "Return 'TERMINATE' when the task is complete.",
+        system_message="You are a helpful AI assistant. "
+"Dont remove - from the publication_year input"
+"""
+PROCESS:
+1. Acknowledge the search request
+2. Use the find_paper tool to search for papers
+3. Validate results against ALL constraints
+4. Return ONLY papers that satisfy ALL requirements
+
+OUTPUT FORMAT (for each valid paper):
+- **Title**: [paper title]
+- **Authors**: [author list]
+- **Publication Year**: [year]
+- **Citation Count**: [number]
+- **Citation Source**: [e.g., Google Scholar, Scopus, Web of Science]
+- **Paper Link**: [URL or "Not available"]
+- **Match Explanation**: [brief explanation of why this paper matches the request]
+
+VALIDATION RULES:
+- Reject papers with publication year NOT matching the requested year
+- Reject papers with citation count BELOW the minimum threshold
+- Only return papers that meet ALL constraints
+- If no papers satisfy all constraints, clearly state this
+"""
+
+"Don't include any other text in your response. "
+"Return 'TERMINATE' when the task is done.",
         llm_config=LLM_CONFIG,
     )
 
-    # Register tool for LLM to see it
     agent.register_for_llm(
-        name="find_paper_tool",
-        description="Search for academic papers based on a query with optional filters for year and citation count."
+        name="find_paper",
+        description="Search for academic papers. Parameters: query (string), publication_year (int), min_citations (int). Returns: list of papers with title, authors, year, citations, and URL.",
     )(find_paper_tool)
 
-    # Register tool for execution
-    agent.register_for_execution(name="find_paper_tool")(find_paper_tool)
-
     return agent
+
 
 
 if __name__ == "__main__":
@@ -34,18 +52,21 @@ if __name__ == "__main__":
     # Create a user proxy for human input
     user_proxy = UserProxyAgent(
         name="User",
-        human_input_mode="ALWAYS",
+        human_input_mode="NEVER",
         code_execution_config=False,
+        is_termination_msg=lambda msg: msg.get("content") is not None and "TERMINATE" in msg["content"],
     )
 
+    # Register tool for execution
+    user_proxy.register_for_execution(name="find_paper")(find_paper_tool)
+
     # Get user input
-    topic = input("Enter research topic: ")
+    query = input("Enter research topic: ")
     publication_year = (input("Enter publication year: "))
     min_citations = int(input("Enter minimum citation count: "))
 
-    # Start a chat with the agent using user-provided parameters
     user_proxy.initiate_chat(
         agent,
-        message=f"Find the best research paper about {topic} published in {publication_year} with at least {min_citations} citations. "
+        message=f"Find the best research paper about {query} published in {publication_year} with at least {min_citations} citations. "
                 f"Return only the single best paper candidate with full details."
     )
