@@ -1,31 +1,56 @@
+from dataclasses import dataclass
+from typing import List, Optional
 import requests
 from research_agent.config import SEMANTIC_CONFIG
 
-def find_paper_tool():
-    result_limit = 10
-    query = input("Enter your research query: ")
-    year = input("Enter your research year: ")
-    minimum_citations = input("Enter your minimum citations: ")
+@dataclass
+class Paper:
+    title: str
+    authors: List[str]
+    year: int
+    tldr: str | None
+    citation_count: int
+    url: str
 
+def find_paper_tool(query: str, year: str, minimum_citations: int) -> List[Paper]:
+    rsp = requests.get(
+        'https://api.semanticscholar.org/graph/v1/paper/search',
+        headers={'X-API-KEY': SEMANTIC_CONFIG['api_key']},
+        params={
+            'query': query,
+            'year': year,
+            'minCitationCount': int(minimum_citations),
+            'fields': 'title,authors,year,url,citationCount,tldr'
+        }
+    )
 
-    rsp = requests.get('https://api.semanticscholar.org/graph/v1/paper/search',
-                       headers={'X-API-KEY': SEMANTIC_CONFIG['api_key']},
-                       params={'query': query, 'limit': result_limit, 'year': year, 'minCitationCount': int(minimum_citations), 'fields': 'title,url,citationCount'})
-    if rsp.status_code == 200:
-        results = rsp.json()
-        total = results['total']
-        if not total:
-            print("No papers found for the given query.")
-        else:
-            print(f'Found {total} papers for {query}, showing up to {result_limit} results.')
-            papers = results['data']
-            print_papers(papers)
-    else:
-        print(rsp.status_code, rsp.text)
+    if rsp.status_code != 200:
+        raise RuntimeError(f"Semantic Scholar API error {rsp.status_code}: {rsp.text}")
 
-def print_papers(papers):
-    for idx, paper in enumerate(papers):
-        print(f"{idx} {paper['title']} {paper['url']} {paper['citationCount']}")
+    results = rsp.json()
+    total = results.get('total', 0)
+    if not total:
+        return []
 
-if __name__ == '__main__':
-    find_paper_tool()
+    papers_raw = results.get('data', [])
+    papers: List[Paper] = []
+    for paper in papers_raw:
+        authors = [a.get('name', '') for a in paper.get('authors', [])]
+        tldr_obj = paper.get('tldr')
+        tldr_text = None
+        if isinstance(tldr_obj, dict):
+            tldr_text = tldr_obj.get('text')
+        elif isinstance(tldr_obj, str):
+            tldr_text = tldr_obj
+        papers.append(
+            Paper(
+                title=paper.get('title'),
+                authors=authors,
+                year=paper.get('year'),
+                tldr=tldr_text,
+                citation_count=paper.get('citationCount'),
+                url=paper.get('url')
+            )
+        )
+
+    return papers
