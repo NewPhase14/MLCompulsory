@@ -7,8 +7,12 @@ def create_research_agent() -> ConversableAgent:
     agent = ConversableAgent(
         name="Research Agent",
         system_message="You are a helpful AI assistant. "
-"Dont remove - from the publication_year input"
+"Ensure when user types before, ALWAYS set - before the year. For example, if user types 2020, interpret it as -2020 to search for papers published before 2020. "
+"Ensure when user types after, ALWAYS set - after the year. For example, if user types 2020, interpret it as 2020- to search for papers published after 2020. "
+"Ensure when user types between, ALWAYS set - between the years. For example, if user types 2015 and 2020, interpret it as 2015-2020 to search for papers published between 2015 and 2020."
+"Ensure when user don't type anything else than the year, NEVER set any - before or after the year. For example, if user types 2020, interpret it as 2020 to search for papers published in 2020."
 """
+
 PROCESS:
 1. Acknowledge the search request
 2. Use the find_paper tool to search for papers
@@ -22,7 +26,7 @@ OUTPUT FORMAT (for each valid paper):
 - **Citation Count**: [number]
 - **Citation Source**: [e.g., Google Scholar, Scopus, Web of Science]
 - **Paper Link**: [URL or "Not available"]
-- **Match Explanation**: [brief explanation of why this paper matches the request]
+- **Match Explanation**: [brief explanation of why this paper matches the request, why it was selected, and how it meets the constraints]
 
 VALIDATION RULES:
 - Reject papers with publication year NOT matching the requested year
@@ -62,7 +66,7 @@ if __name__ == "__main__":
 
     # Get user input
     query = input("Enter research topic: ")
-    publication_year = (input("Enter publication year: "))
+    publication_year = input("Enter publication year (Use before, after or between): ")
     min_citations = int(input("Enter minimum citation count: "))
 
     user_proxy.initiate_chat(
