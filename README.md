@@ -73,3 +73,16 @@ We have worked together on the project, so many of the contributions were collab
 - [Jeppe Hallen Baden]: Implemented the find_paper_tool which allows the agent to search for relevant papers using the Semantic Scholar API. 
 - [Nikolaj Sørensen]: Implemented the paper_research_agent which is the agent that utilizes the find_paper_tool to research papers based on a given query.
 
+## Reflection 
+1. What worked well?
+- The agent was able to call the find_paper_tool effectively to search for relevant papers based on the provided criteria. The agent was also able to understand and apply the year and citation constraints correctly in most cases. The agent was able to find relevant papers, but also took citation count into account. 
+2. What failed or was unreliable?
+- In some cases, the agent struggled with understanding certain year formats (e.g., "2000-", "2000-2020") which led to incorrect results. We fixed this by telling the agent to use the before, after and between constraints instead of other formats. In some cases if the user typed 2000-, then the agent would remove the "-" and only search for papers in 2000 instead of 2000 and after. 
+3. How often did the agent need tool calls?
+- The agent needed to call the find_paper_tool for every query to search for relevant papers based on the provided criteria.
+4. Did the LLM ever hallucinate?
+- Yes, in some cases the agent hallucinated by providing incorrect information about the papers, such as wrong citation sources or irrelevant papers. This was particularly evident in cases where the tool didn't return any relevant papers.
+5. How did you prevent incorrect answers?
+- We tried to prevent incorrect answers by providing clear instructions to the agent on how to use the find_paper_tool and how to interpret the results. 
+6. What would you improve with more time?
+- With more time, we would improve the tool's ability to search for papers by multiple sources. 
